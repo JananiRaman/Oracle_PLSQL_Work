@@ -1,0 +1,103 @@
+-- 7. Write a report to show all Employees for a Department
+--- 3 methods, 1. Method using utl_file.
+CONNECT / AS APEX_PUBLIC_USER
+CREATE OR REPLACE DIRECTORY EXTRACT_DIR AS 'C:\Janani\Oracle\';
+GRANT READ, WRITE ON DIRECTORY EXTRACT_DIR TO APEX_PUBLIC_USER;
+GRANT EXECUTE ON UTL_FILE TO APEX_PUBLIC_USER;
+
+CONNECT scott/tiger
+
+CREATE OR REPLACE PROCEDURE EMP_CSV AS
+  CURSOR c_data IS
+    SELECT EMPLOYEE_ID,
+            EMPLOYEE_NAME,
+            JOB_TITLE,
+            MANAGER_ID,
+            DATE_HIRED,
+            SALARY,
+            DEPARTMENT_ID
+    FROM   employee
+    where department_id=4
+    ORDER BY employee_id;
+    
+  v_file  UTL_FILE.FILE_TYPE;
+BEGIN
+  v_file := UTL_FILE.FOPEN(location     => 'EXTRACT_DIR',
+                           filename     => 'emp_csv.txt',
+                           open_mode    => 'w',
+                           max_linesize => 32767);
+  FOR cur_rec IN c_data LOOP
+    UTL_FILE.PUT_LINE(v_file,
+                        cur_rec.EMPLOYEE_ID||','||
+                        cur_rec.EMPLOYEE_NAME||','||
+                        cur_rec.JOB_TITLE||','||
+                        cur_rec.MANAGER_ID||','||
+                        cur_rec.DATE_HIRED||','||
+                        cur_rec.SALARY||','||
+                        cur_rec.DEPARTMENT_ID);
+  END LOOP;
+  UTL_FILE.FCLOSE(v_file);
+  
+EXCEPTION
+  WHEN OTHERS THEN
+    UTL_FILE.FCLOSE(v_file);
+    RAISE;
+END;
+/
+
+---method 2 using ref cursor
+---7. Write a report to show all Employees for a Department
+
+create or replace procedure prc_employee_dept_dtls  (dept_id IN  department.department_id%type) as 
+v_emp_exists char(1);
+v_sql varchar2(1000);
+l_refcursor  SYS_REFCURSOR;
+
+begin 
+
+begin
+select (case when department_id is not null and department_id = dept_id then 
+         'Y' 
+         else 'N' 
+         end)
+         into
+         v_emp_exists 
+from employee
+where department_id = dept_id;
+exception
+when no_data_found then 
+v_emp_exists := 'N';
+dbms_output.put_line('there is employee available for the given department in the system, kindly add and map it with employees to know more details'||dept_id);
+end;
+
+if v_emp_exists ='Y' then 
+v_sql := 'select * from employee where department_id = :deptid';
+execute immediate v_sql into l_refcursor using dept_id;
+end if;
+
+exception 
+when no_data_found then 
+dbms_output.put_line('There is no record for this department to populate the report here'||dept_id);
+when others then
+dbms_output.put_line('There is some error while trying to generate a report for this employee'||dept_id);
+end;
+/
+
+exec prc_employee_dept_dtls(4);
+
+--Method 3 using ql*plus spool option without using plsql code.
+SET LINESIZE 1000 TRIMSPOOL ON PAGESIZE 0 FEEDBACK OFF
+
+SPOOL C:\Janani\Oracle\emp.csv
+select *
+from employee
+where department_id=4
+order by employee_id;
+
+
+SPOOL OFF
+
+SET PAGESIZE 14
+/
+
+

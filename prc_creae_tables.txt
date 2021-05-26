@@ -1,0 +1,58 @@
+create or replace procedure prc_create_tables  as  
+  
+TYPE tables_type is table of varchar2(500);  
+table_names tables_type;  
+v_count number:= 0;  
+v_table_name user_tables.table_name%type;  
+total  number;  
+  
+begin  
+  
+table_names := tables_type('DEPARTMENT','EMPLOYEE');  
+dbms_output.put_line('HI '||table_names.first);  
+total := table_names.count;  
+  
+for i in 1..total loop   
+dbms_output.put_line('HI '||table_names(i));  
+  
+Begin  
+    select count(1)  
+           into   
+           v_count  
+    from user_tables  
+    where table_name = table_names(i);  
+exception   
+    when no_data_found then  
+     v_count:=0;  
+end;  
+  
+dbms_output.put_line(v_count);  
+  
+if (v_count = 0 and table_names(i) = 'DEPARTMENT') then  
+  dbms_output.put_line('HI '||table_names(i));  
+  execute immediate 'create table DEPARTMENT ( department_id number(5) PRIMARY KEY,department_name varchar2(50) not null ,location varchar2(50) not null)';  
+end if; 
+ 
+IF (v_count = 0 and table_names(i) = 'EMPLOYEE') then  
+  dbms_output.put_line('HI '||table_names(i));  
+ execute immediate 'create table EMPLOYEE ( Employee_Id Number(10) ,Employee_Name varchar2(50) not null ,Job_Title varchar2(50) not null ,Manager_Id Number(10),Date_Hired Date not null,salary number(10) not null,department_id number(5) not null, primary key(employee_id),constraint cons_foreign_deptid foreign key (department_id) references department(department_id) )';  
+end if;  
+
+/*
+if (v_count= 1 and table_names(i) ='DEPARTMENT') then 
+   execute immediate 'insert into department values(1,''Management'',''London'')';
+   execute immediate 'insert into department values(2,''Engineering'',''Cardiff'')';
+   execute immediate 'insert into department values(3,''Research & Development'',''Edinburgh'')';
+   execute immediate 'insert into department values(4,''Sales'',''Belfast'')';
+end if;
+commit;
+*/
+end loop;  
+
+exception   
+when no_data_found then   
+dbms_output.put_line('No tables have created');  
+when others then   
+dbms_output.put_line('There is some other errors in creating the basic tables');  
+end;
+/

@@ -1,0 +1,40 @@
+---3. Create an appropriate executable database object to allow an Employee to be created
+create or replace procedure prc_insert_employee_dtls (emp_id IN  employee.employee_id%type) as 
+v_emp_exists char(1);
+v_sql varchar2(1000);
+
+begin 
+
+begin
+select (case when employee_id is not null and employee_id = emp_id then 
+         'Y' 
+         else 'N' 
+         end)
+         into
+         v_emp_exists 
+from employee
+where employee_id = emp_id;
+exception
+when no_data_found then 
+v_emp_exists := 'N';
+dbms_output.put_line('the given employee details are not there in the system, kindly add it to know more details');
+end;
+
+---dbms_output.put_line(v_emp_exists);
+
+if v_emp_exists ='N' then 
+ v_sql:='insert into employee (employee_id,employee_name,job_title,manager_id,date_hired,salary,department_id) values '|| '(:empid,:ename,:etitle,:emanger,:edate,:esalary,:edeptid)';
+ --dbms_output.put_line(v_sql);
+ execute immediate v_sql using emp_id,'Selva Janani','Senior Oracle Developer',900002,trunc(sysdate),65000,2;
+end if ;
+commit;
+
+exception 
+when no_data_found then 
+dbms_output.put_line('the given employee details are not there in the system, kindly add it to know more details');
+when others then
+dbms_output.put_line('there is some error in adding the employee details to the system');
+end;
+/
+
+exec prc_insert_employee_dtls(900018);

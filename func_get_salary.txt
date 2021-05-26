@@ -1,0 +1,44 @@
+---6. Create an appropriate executable database object to return the Salary for an Employee.
+create or replace function func_get_salary (emp_id in employee.employee_id%type) return number
+as 
+v_salary employee.salary%type := 0;
+v_employee_exists char(1);
+v_sql varchar2(1000);
+
+begin
+
+begin 
+select (case 
+       when (employee_id is not null and employee_id = emp_id) then
+        'Y'
+        else 'N' 
+        end) 
+       into 
+       v_employee_exists
+from employee
+where employee_id = emp_id;
+
+exception 
+when no_data_found then 
+ v_employee_exists := 'N';
+ dbms_output.put_line('there is no data available for the given emp_id,try with employee id in the system');
+end;
+
+if v_employee_exists ='Y' then
+ v_sql := 'select nvl(salary,0) from employee where employee_id =:empid';
+ execute immediate v_sql into v_salary using emp_id;
+end if; 
+
+return v_salary;
+
+exception 
+when no_data_found then 
+dbms_output.put_line('Enter the valid employee id');
+when others then 
+dbms_output.put_line('there is some error in getting the salary of an employee');
+
+
+end;
+/
+
+select func_get_salary(90001) from dual;

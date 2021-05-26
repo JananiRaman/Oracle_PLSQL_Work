@@ -1,0 +1,73 @@
+---desc employee;
+
+---5. Create an appropriate executable database object to allow the transfer of an Employee to a different Department
+create or replace procedure prc_update_dept (emp_id in employee.employee_id%type,
+                                             dept_id in department.department_id%type)
+as
+
+v_employee_exists char(1);
+v_dept department.department_id%type;
+v_old_dept_name department.department_name%type;
+v_new_dept_name department.department_name%type;
+not_available  exception;
+
+begin
+
+begin 
+select (case 
+       when (emp.employee_id is not null and emp.employee_id = emp_id) then
+        'Y'
+        else 'N' 
+        end),
+        dept.department_id,
+        dept.department_name
+       into 
+       v_employee_exists,
+       v_dept,
+       v_old_dept_name
+from employee emp,department dept
+where employee_id = emp_id
+and emp.department_id = dept.department_id;
+
+exception 
+when no_data_found then 
+ v_employee_exists := 'N';
+ dbms_output.put_line('there is no data available for updating the departmnt details of an employee');
+end;
+
+if v_employee_exists ='Y' and v_dept <> dept_id   then
+ update employee set department_id = dept_id  where employee_id = emp_id;
+elsif v_employee_exists ='Y' and v_dept =  dept_id   then
+ dbms_output.put_line('both the new as well the old values of departments are same and there is no need of update for this input');
+end if; 
+commit;
+---to get the name of the bew department name
+
+begin
+select department_name 
+       into 
+      v_new_dept_name
+from department
+where department_id = dept_id;
+exception
+when no_data_found then 
+  v_new_dept_name := 'Not Available';
+  raise not_available;
+end;
+
+if (v_old_dept_name is not null and v_new_dept_name <> 'Not Available') then 
+dbms_output.put_line('The employee with employee_id  '||emp_id||' department name has been changed from '|| v_old_dept_name || ' to '|| v_new_dept_name);
+end if;
+
+exception
+when no_data_found then 
+dbms_output.put_line('there is no valid data available for updating the department details of an employee');
+when not_available then 
+dbms_output.put_line('New Department id  '||dept_id|| ' is not there in the system to update.,try with the existing values.');
+when others then
+dbms_output.put_line('there is some error while updating the department details of an employee');
+end;
+/
+
+exec prc_update_dept(90017,5);
+/

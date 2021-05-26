@@ -1,0 +1,39 @@
+----4. Create an appropriate executable database object to allow the Salary for an Employee to be increased or decreased by a percentage
+create or replace procedure prc_update_salary(emp_id in employee.employee_id%type)
+as 
+v_salary employee.salary%type;
+v_employee_exists char(1);
+begin
+
+begin 
+select (case 
+       when (employee_id is not null and employee_id = emp_id) then
+        'Y'
+        else 'N' 
+        end),salary 
+       into 
+       v_employee_exists,
+       v_salary
+from employee
+where employee_id = emp_id;
+
+exception 
+when no_data_found then 
+ v_employee_exists := 'N';
+ dbms_output.put_line('there is no datafound available for updating the salary details of an employee');
+end;
+
+if v_employee_exists ='Y' then
+ update employee set salary= (v_salary + (v_salary * (20/100))) where employee_id = emp_id;
+end if; 
+commit;
+exception
+when no_data_found then 
+dbms_output.put_line('there is no datafound available for updating the salary details of an employee');
+when others then
+dbms_output.put_line('there is some error while updating the salary details of an employee');
+end;
+/
+---45000
+exec prc_update_salary(90008);
+/

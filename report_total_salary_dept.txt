@@ -1,0 +1,42 @@
+---8. Write a report to show the total of Employee Salary for a Department
+
+create or replace function func_total_sal_emp (dept_id department.department_id%type) return number as
+
+v_total_salary employee.salary%type:=0;
+v_count number;
+v_sql varchar2(500);
+
+begin
+
+begin
+select count(1) 
+ into v_count
+from
+employee
+where department_id = dept_id;
+exception 
+when no_data_found then
+v_count := 0;
+dbms_output.put_line('There is no valid data available in the system for the input dept_id'||dept_id);
+end;
+
+if v_count > 0 then
+v_sql := 'select sum(salary) from employee where department_id = :deptid group by department_id';
+execute immediate v_sql into v_total_salary using dept_id;
+else 
+v_total_salary := 0;
+dbms_output.put_line('There is no valid data available in the system for the input dept_id '||dept_id);
+end if;
+
+return v_total_salary;
+
+exception
+when no_data_found then
+dbms_output.put_line('There is no valid data available in the system for the input dept_id '||dept_id);
+when others then
+dbms_output.put_line('There is some error in generating the report for total salary for the depatment'||dept_id);
+end;
+/
+
+
+select func_total_sal_emp(46) from dual;
